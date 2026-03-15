@@ -24,3 +24,28 @@ window.addEventListener('load', () => {
         }
     }
 });
+
+// Set ikon untuk tampilan recent app
+window.addEventListener('appinstalled', () => {
+    // Beritahu sistem untuk memperbarui data aplikasi
+    if (navigator.setAppBadge) {
+        navigator.setAppBadge(0).catch(() => {});
+    }
+});
+
+// Forcely set display mode and icon reference
+document.addEventListener('DOMContentLoaded', () => {
+    if (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches) {
+        document.title = 'Party Brawl';
+        // Tambahkan meta tag dinamis untuk sistem
+        const metaIcon = document.createElement('meta');
+        metaIcon.name = 'msapplication-TileImage';
+        metaIcon.content = 'assets/icon/icon-144x144.png';
+        document.head.appendChild(metaIcon);
+        
+        const metaTile = document.createElement('meta');
+        metaTile.name = 'msapplication-TileColor';
+        metaTile.content = '#ffffff';
+        document.head.appendChild(metaTile);
+    }
+});
