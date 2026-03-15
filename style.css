@@ -5,38 +5,44 @@
     font-family: sans-serif;
 }
 
-/* Paksa seluruh area layar digunakan */
+/* KUNCI UTAMA: Paksa layar tutupi notch */
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+}
+
 html, body {
     width: 100% !important;
     height: 100% !important;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     background-color: #ffffff;
     overflow: hidden !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    /* Hapus semua batasan sistem */
+    /* Hapus semua batasan */
     padding: 0 !important;
     margin: 0 !important;
     border: 0 !important;
-    /* Paksa konten menutupi notch */
-    content-visibility: auto;
-    overscroll-behavior: none;
 }
 
-/* Hapus semua safe area */
-@supports (padding-top: env(safe-area-inset-top)) {
-    html, body {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
+/* Wrapper layar seperti di file kamu */
+.screen {
+    position: fixed; inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+.screen.active {
+    opacity: 1;
+    pointer-events: all;
 }
 
-/* Mode landscape wajib tanpa batasan */
+/* Mode landscape wajib */
 @media screen and (orientation: portrait) {
     body {
         transform: rotate(90deg);
@@ -50,9 +56,4 @@ html, body {
     font-size: 16px;
     color: #000000;
     text-align: center;
-}
-
-/* Hapus pesan peringatan sistem */
-::-webkit-full-screen-placeholder {
-    display: none !important;
 }
