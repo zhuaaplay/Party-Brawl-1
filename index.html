@@ -5,7 +5,6 @@
     <!-- KUNCI UTAMA: viewport-fit=cover dan user-scalable=no -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Party Brawl</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     
     <!-- Ikon di folder assets/icon -->
@@ -24,7 +23,6 @@
     <link rel="icon" sizes="384x384" href="assets/icon/icon-384x384.png">
     <link rel="icon" sizes="512x512" href="assets/icon/icon-512x512.png">
     
-    <!-- Meta untuk fullscreen seperti di file kamu -->
     <meta name="theme-color" content="#ffffff">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,18 +30,416 @@
     <meta name="apple-mobile-web-app-title" content="Party Brawl">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icon/icon-180x180.png">
     
-    <!-- Konfigurasi untuk Windows/Chromium -->
-    <link rel="msapplication-config" href="browserconfig.xml" />
+    <!-- browserconfig inline via meta (gantikan browserconfig.xml) -->
+    <meta name="msapplication-config" content="none">
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="assets/icon/icon-144x144.png">
+    <meta name="msapplication-square70x70logo"   content="assets/icon/icon-72x72.png">
+    <meta name="msapplication-square150x150logo" content="assets/icon/icon-144x144.png">
+    <meta name="msapplication-wide310x150logo"   content="assets/icon/icon-384x384.png">
+    <meta name="msapplication-square310x310logo" content="assets/icon/icon-512x512.png">
+
+    <style>
+    /* ════════════════════════════
+       style.css (tidak diubah)
+    ════════════════════════════ */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: sans-serif;
+    }
+
+    /* KUNCI UTAMA: Paksa layar tutupi notch */
+    :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+    }
+
+    html, body {
+        width: 100% !important;
+        height: 100% !important;
+        background-color: #ffffff;
+        overflow: hidden !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    .screen {
+        position: fixed; inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s ease;
+    }
+    .screen.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    @media screen and (orientation: portrait) {
+        body {
+            transform: rotate(90deg);
+            transform-origin: 0 0;
+            width: 100vh !important;
+            height: 100vw !important;
+        }
+    }
+
+    .container p {
+        font-size: 16px;
+        color: #000000;
+        text-align: center;
+    }
+
+    /* ════════════════════════════
+       Loading Screen
+    ════════════════════════════ */
+    #screen-load {
+        position: fixed; inset: 0;
+        background: #e8e8e8;
+        z-index: 9000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    #screen-load.active { display: flex; }
+
+    #watermark-img {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: center;
+        display: block; z-index: 0;
+    }
+
+    .wm-corner {
+        position: absolute;
+        color: #444; line-height: 1.45;
+        z-index: 1; font-family: Arial, sans-serif;
+    }
+    #wm-top-left { top: 22px; left: 24px; font-size: clamp(9px, 1.1vw, 13px); }
+    #wm-top-left .wm-version { font-weight: 700; color: #444; display: block; }
+    #wm-top-left .wm-server  { font-weight: 400; color: #444; display: block; font-size: clamp(8px,1vw,12px); }
+    #wm-bot-left {
+        bottom: 20px; left: 22px;
+        display: flex; align-items: center; gap: 8px; z-index: 1;
+    }
+    .wm-spinner {
+        width: clamp(10px,1.4vw,14px); height: clamp(10px,1.4vw,14px);
+        border-radius: 50%;
+        border: 2px solid #ccc; border-top-color: #444;
+        animation: wmSpin 0.7s linear infinite; flex-shrink: 0;
+    }
+    @keyframes wmSpin { to { transform: rotate(360deg); } }
+    #wm-status-label { font-weight: 700; color: #444; font-size: clamp(9px,1.15vw,13px); }
+    #wm-status-sub   { font-weight: 400; color: #444; font-size: clamp(9px,1.15vw,13px); }
+    #wm-bot-right {
+        bottom: 20px; right: 22px;
+        font-size: clamp(8px,1vw,12px); color: #444; font-weight: 400; z-index: 1;
+    }
+
+    /* Tap To Start */
+    #tap-start {
+        position: fixed; inset: 0;
+        background: #000;
+        z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        -webkit-tap-highlight-color: transparent;
+        cursor: pointer; user-select: none;
+    }
+
+    /* Account Modal */
+    #account-modal-dim {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 99985; display: none;
+        align-items: center; justify-content: center;
+    }
+    #account-modal-dim.show { display: flex; }
+    #account-modal {
+        background: #fff; border-radius: 18px;
+        padding: 18px 20px 16px; width: min(340px, 85vw);
+        max-height: 85vh; overflow-y: auto;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.22);
+        display: flex; flex-direction: column; gap: 9px;
+        transform: translateY(60px); opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease;
+    }
+    #account-modal.open    { transform: translateY(0); opacity: 1; }
+    #account-modal.closing { transform: translateY(60px); opacity: 0; transition: transform 0.28s ease, opacity 0.25s ease; }
+    .modal-title { font-family: Arial,sans-serif; font-size: clamp(13px,1.6vw,15px); font-weight: 800; color: #1a1a1a; }
+    .modal-desc  { font-family: Arial,sans-serif; font-size: clamp(9px,1vw,11px); color: #888; line-height: 1.5; margin-top: -4px; }
+    .modal-avatar-wrap { display: flex; justify-content: center; margin: 2px 0; }
+    #avatar-btn {
+        width: clamp(48px,6vw,58px); height: clamp(48px,6vw,58px);
+        border-radius: 50%; overflow: hidden; border: 2.5px solid #eee;
+        cursor: pointer; position: relative; background: #f0f0f0;
+    }
+    #avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #avatar-btn .avatar-edit {
+        position: absolute; inset: 0; background: rgba(0,0,0,0.28);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.2s; font-size: 14px; color: #fff;
+    }
+    #avatar-btn:hover .avatar-edit { opacity: 1; }
+    #avatar-input { display: none; }
+    .modal-fields { display: flex; flex-direction: column; gap: 7px; }
+    .field-group  { display: flex; flex-direction: column; gap: 3px; }
+    .field-label  { font-family: Arial,sans-serif; font-size: clamp(8px,0.9vw,10px); color: #999; font-weight: 600; }
+    .field-input  {
+        width: 100%; background: #f5f5f5; border: 1.5px solid #e0e0e0;
+        border-radius: 999px; padding: 7px 13px;
+        font-family: Arial,sans-serif; font-size: clamp(10px,1.2vw,12px);
+        color: #222; outline: none; transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: #aaa; background: #fff; }
+    .field-input.error { border-color: #ff5555; background: #fff5f5; }
+    .field-hint { font-family: Arial,sans-serif; font-size: clamp(7px,0.85vw,9px); color: #bbb; padding-left: 12px; }
+    #btn-create {
+        width: 100%; padding: 9px; border-radius: 999px;
+        background: #1a1a1a; color: #fff;
+        font-family: Arial,sans-serif; font-size: clamp(11px,1.3vw,13px);
+        font-weight: 700; border: none; cursor: pointer;
+    }
+    #btn-create:active { opacity: 0.8; }
+    #modal-field-error {
+        font-family: Arial,sans-serif; font-size: clamp(8px,1vw,10px);
+        color: #ff5555; text-align: center; min-height: 14px;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    #modal-field-error.show { opacity: 1; }
+    </style>
 </head>
 <body>
-    <!-- Tambahkan div wrapper seperti di file kamu -->
+
+    <!-- Tap To Start -->
+    <div id="tap-start"></div>
+
+    <!-- Loading Screen -->
+    <div id="screen-load">
+        <img id="watermark-img" src="assets/watermark.png" alt="Watermark">
+        <div class="wm-corner" id="wm-top-left">
+            <span class="wm-version">Version 1.0.3</span>
+            <span class="wm-server">Global Server - Asia</span>
+        </div>
+        <div class="wm-corner" id="wm-bot-left">
+            <div class="wm-spinner"></div>
+            <span id="wm-status-label"></span>
+            <span id="wm-status-sub"></span>
+        </div>
+        <div class="wm-corner" id="wm-bot-right">&copy; 2026 Source xyuaUi</div>
+    </div>
+
+    <!-- Account Modal -->
+    <div id="account-modal-dim">
+        <div id="account-modal">
+            <div class="modal-title">Create Your Account</div>
+            <div class="modal-desc">Create an account to save all your achievements in the game. Your data will not be misused.</div>
+            <div class="modal-avatar-wrap">
+                <div id="avatar-btn">
+                    <img id="avatar-preview" src="assets/user.png" alt="Profile">
+                    <div class="avatar-edit">✏️</div>
+                </div>
+                <input type="file" id="avatar-input" accept="image/*">
+            </div>
+            <div class="modal-fields">
+                <div class="field-group">
+                    <div class="field-label">First name</div>
+                    <input class="field-input" id="input-firstname" type="text" placeholder="Enter first name" maxlength="10">
+                    <div class="field-hint">Min 3, max 10 characters</div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Last name <span style="color:#ccc;font-weight:400">(optional)</span></div>
+                    <input class="field-input" id="input-lastname" type="text" placeholder="Enter last name" maxlength="5">
+                    <div class="field-hint">Optional · max 5 characters</div>
+                </div>
+            </div>
+            <div id="modal-field-error"></div>
+            <button id="btn-create">Create</button>
+        </div>
+    </div>
+
+    <!-- Main content (dari file asli) -->
     <div class="screen active">
         <div class="container">
             <p>Hello World</p>
         </div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+    /* ════════════════════════════
+       script.js (tidak diubah)
+    ════════════════════════════ */
+    // Registrasi Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker terdaftar:', reg.scope))
+                .catch(err => console.log('Gagal mendaftarkan Service Worker:', err));
+        });
+    }
+
+    // Fungsi fullscreen seperti di file kamu
+    function enterFullScreen() {
+        const elem = document.documentElement;
+        if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen({
+                navigationUI: "hide",
+                displayOverride: ["landscape-primary"]
+            });
+        } else if (elem.requestFullscreen) {
+            elem.requestFullscreen({ navigationUI: "hide" });
+        }
+
+        // Paksa sistem abaikan notch
+        if (screen.orientation) {
+            screen.orientation.lock('landscape-primary').catch(() => {});
+        }
+    }
+
+    // Klik untuk fullscreen
+    document.addEventListener('click', () => {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            enterFullScreen();
+        }
+    });
+
+    // Jalankan saat aplikasi dibuka
+    window.addEventListener('load', () => {
+        if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) {
+            setTimeout(enterFullScreen, 300);
+        }
+    });
+
+    /* ════════════════════════════
+       Loading Screen JS
+    ════════════════════════════ */
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+
+    function getAccount() {
+        try { return JSON.parse(localStorage.getItem('pb_account')) || null; } catch { return null; }
+    }
+    function saveAccount(d) { localStorage.setItem('pb_account', JSON.stringify(d)); }
+
+    function cropSquare(src, cb) {
+        const img = new Image();
+        img.onload = () => {
+            const size = Math.min(img.width, img.height);
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            c.getContext('2d').drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+            cb(c.toDataURL('image/jpeg', 0.88));
+        };
+        img.src = src;
+    }
+
+    let avatarDataUrl = null;
+    (function() {
+        const btn = document.getElementById('avatar-btn');
+        const inp = document.getElementById('avatar-input');
+        const prv = document.getElementById('avatar-preview');
+        if (!btn) return;
+        btn.addEventListener('click', () => inp.click());
+        inp.addEventListener('change', function() {
+            const file = this.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = e => cropSquare(e.target.result, cr => { avatarDataUrl = cr; prv.src = cr; });
+            r.readAsDataURL(file);
+        });
+    })();
+
+    function openAccountModal() {
+        const dim = document.getElementById('account-modal-dim');
+        const mod = document.getElementById('account-modal');
+        dim.classList.add('show');
+        requestAnimationFrame(() => requestAnimationFrame(() => mod.classList.add('open')));
+    }
+    function closeAccountModal() {
+        return new Promise(resolve => {
+            const dim = document.getElementById('account-modal-dim');
+            const mod = document.getElementById('account-modal');
+            mod.classList.remove('open'); mod.classList.add('closing');
+            setTimeout(() => { mod.classList.remove('closing'); dim.classList.remove('show'); resolve(); }, 300);
+        });
+    }
+    function waitForAccount() {
+        return new Promise(resolve => {
+            if (getAccount()) { resolve(); return; }
+            openAccountModal();
+            document.getElementById('btn-create').onclick = () => {
+                const fn  = document.getElementById('input-firstname').value.trim();
+                const ln  = document.getElementById('input-lastname').value.trim();
+                const err = document.getElementById('modal-field-error');
+                document.getElementById('input-firstname').classList.remove('error');
+                document.getElementById('input-lastname').classList.remove('error');
+                err.classList.remove('show');
+                if (fn.length < 3) {
+                    document.getElementById('input-firstname').classList.add('error');
+                    err.textContent = 'First name minimum 3 characters.';
+                    err.classList.add('show'); return;
+                }
+                if (ln.length > 5) {
+                    document.getElementById('input-lastname').classList.add('error');
+                    err.textContent = 'Last name maximum 5 characters.';
+                    err.classList.add('show'); return;
+                }
+                saveAccount({ firstname: fn, lastname: ln, avatar: avatarDataUrl || 'assets/user.png' });
+                closeAccountModal().then(resolve);
+            };
+        });
+    }
+
+    const statusLabel = document.getElementById('wm-status-label');
+    async function setStatus(label, ms) {
+        if (statusLabel) { statusLabel.style.opacity = '0'; }
+        await wait(150);
+        if (statusLabel) { statusLabel.textContent = label; statusLabel.style.opacity = '1'; }
+        if (ms > 0) await wait(ms);
+    }
+
+    async function loadingSequence() {
+        await setStatus('Connect to server', 7000);
+        await setStatus('Loading resource',  7000);
+        if (statusLabel) { statusLabel.textContent = 'Login'; statusLabel.style.opacity = '1'; }
+        await waitForAccount();
+        await wait(6000);
+        await setStatus('Update resource', 8000);
+        await setStatus('Load resource',   8000);
+        await setStatus('Load assets',     8000);
+        await setStatus('Completed',       2000);
+    }
+
+    async function mainSequence() {
+        await wait(2000);
+        document.getElementById('screen-load').classList.add('active');
+        await loadingSequence();
+        document.getElementById('screen-load').classList.remove('active');
+    }
+
+    const tapEl = document.getElementById('tap-start');
+    let tapFired = false;
+
+    function handleTap(e) {
+        if (tapFired) return;
+        tapFired = true;
+        e.preventDefault();
+        tapEl.removeEventListener('touchstart', handleTap);
+        tapEl.removeEventListener('click', handleTap);
+        tapEl.style.display = 'none';
+        enterFullScreen();
+        mainSequence();
+    }
+
+    tapEl.addEventListener('touchstart', handleTap, { passive: false });
+    tapEl.addEventListener('click', handleTap);
+    </script>
 </body>
 </html>
