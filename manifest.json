@@ -6,6 +6,7 @@
     "orientation": "landscape",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",
+    "display_override": ["fullscreen", "landscape-primary"],
     "icons": [
         {"src": "assets/icon/icon-16x16.png", "sizes": "16x16", "type": "image/png"},
         {"src": "assets/icon/icon-32x32.png", "sizes": "32x32", "type": "image/png"},
