@@ -53,13 +53,13 @@
 }
 
 html {
-  /* Extend ke atas agar nutupin garis putih sistem di semua Android */
   background: #000;
-  margin-top: -2px;
-  padding-top: 2px;
   width: 100%;
-  height: calc(100% + 2px);
+  height: 100%;
   overflow: hidden;
+  /* Fix garis putih di semua Android — outline negatif nutupin 1px separator */
+  outline: 3px solid #000;
+  outline-offset: -1px;
 }
 
 body {
@@ -3522,7 +3522,7 @@ async function loadingSequence() {
 }
 
 async function mainSequence() {
-    await wait2(2000);
+    // Langsung ke loading screen tanpa blackscreen
     document.getElementById('screen-load').classList.add('active');
     await loadingSequence();
     document.getElementById('screen-load').classList.remove('active');
@@ -3539,9 +3539,19 @@ function handleTap(e) {
     e.preventDefault();
     tapEl.removeEventListener('touchstart', handleTap);
     tapEl.removeEventListener('click', handleTap);
+    // Sembunyikan tap-start
     tapEl.style.display = 'none';
+    // Langsung tampilkan loading screen — tidak ada blackscreen
+    document.getElementById('screen-load').classList.add('active');
+    // Fullscreen dari gesture
     if (typeof goFullscreenLandscape === 'function') goFullscreenLandscape();
-    mainSequence();
+    // Jalankan loading (screen-load sudah ditampilkan di atas)
+    (async () => {
+        await loadingSequence();
+        document.getElementById('screen-load').classList.remove('active');
+        const menuEl = document.getElementById('screen-menu');
+        if (menuEl) { menuEl.classList.add('active'); menuEl.style.opacity = '1'; menuEl.style.pointerEvents = 'all'; }
+    })();
 }
 tapEl.addEventListener('touchstart', handleTap, { passive: false });
 tapEl.addEventListener('click', handleTap);
