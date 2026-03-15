@@ -1,0 +1,28 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif; /* Font biasa */
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff;
+}
+
+.container p {
+    font-size: 16px; /* Ukuran kecil */
+    color: #000000;
+    text-align: center;
+}
+
+/* Style untuk mode landscape fullscreen */
+@media screen and (orientation: landscape) {
+    body {
+        overflow: hidden;
+    }
+}
