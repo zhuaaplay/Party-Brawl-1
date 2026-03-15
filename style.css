@@ -5,31 +5,44 @@
     font-family: sans-serif;
 }
 
-/* Atur agar layar penuh tanpa safe area */
+/* Paksa seluruh area layar digunakan */
 html, body {
-    width: 100vw;
-    height: 100vh;
+    width: 100% !important;
+    height: 100% !important;
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: #ffffff;
-    /* Hapus semua batasan safe area */
+    overflow: hidden !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    /* Hapus semua batasan sistem */
     padding: 0 !important;
     margin: 0 !important;
-    overflow: hidden;
-    /* Atur agar konten tidak terpengaruh notch */
-    position: fixed;
-    top: 0;
-    left: 0;
+    border: 0 !important;
+    /* Paksa konten menutupi notch */
+    content-visibility: auto;
+    overscroll-behavior: none;
 }
 
-/* Mode landscape wajib */
+/* Hapus semua safe area */
+@supports (padding-top: env(safe-area-inset-top)) {
+    html, body {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}
+
+/* Mode landscape wajib tanpa batasan */
 @media screen and (orientation: portrait) {
     body {
         transform: rotate(90deg);
-        transform-origin: top left;
-        width: 100vh;
-        height: 100vw;
+        transform-origin: 0 0;
+        width: 100vh !important;
+        height: 100vw !important;
     }
 }
 
@@ -39,12 +52,7 @@ html, body {
     text-align: center;
 }
 
-/* Style untuk mode fullscreen setelah diklik */
-.fullscreen-active {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    z-index: 9999;
+/* Hapus pesan peringatan sistem */
+::-webkit-full-screen-placeholder {
+    display: none !important;
 }
