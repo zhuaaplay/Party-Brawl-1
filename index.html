@@ -23,7 +23,7 @@
     <link rel="icon" sizes="384x384" href="assets/icon/icon-384x384.png">
     <link rel="icon" sizes="512x512" href="assets/icon/icon-512x512.png">
 
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,7 +31,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icon/icon-180x180.png">
 
     <meta name="msapplication-config" content="none">
-    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileColor" content="#000000">
     <meta name="msapplication-TileImage" content="assets/icon/icon-144x144.png">
     <meta name="msapplication-square70x70logo"   content="assets/icon/icon-72x72.png">
     <meta name="msapplication-square150x150logo" content="assets/icon/icon-144x144.png">
@@ -52,14 +52,30 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-html, body {
+html {
+  /* Extend ke atas agar nutupin garis putih sistem di semua Android */
+  background: #000;
+  margin-top: -2px;
+  padding-top: 2px;
+  width: 100%;
+  height: calc(100% + 2px);
+  overflow: hidden;
+}
+
+body {
   width: 100%; height: 100%;
-  background: black;
+  background: #000;
   overflow: hidden;
   font-family: sans-serif;
-  /* Paksa konten ke seluruh layar termasuk punch-hole area */
   padding: 0;
   margin: 0;
+}
+
+/* Semua fixed element extend 2px ke atas agar nutupin garis */
+#tap-start, #screen-load, .screen,
+#slide-transition, #rotate-overlay,
+#account-modal-dim {
+  top: -2px !important;
 }
 
 /* Cover seluruh layar termasuk area punch-hole dan edge */
@@ -2272,11 +2288,6 @@ html, body {
   <img id="slide-img" src="assets/splashloading2.png" alt="transition">
 </div>
 
-<!-- Tap To Start: di atas semua, tap → fullscreen -->
-<div id="tap-start"></div>
-
-
-
 <script>
 
 // ── Standalone detect ──
@@ -2363,11 +2374,13 @@ async function hideLoadingText(ms) {
 // ── Bottom Tab ──
 const bottomTab = document.getElementById('bottom-tab');
 function showTab(label) {
+  if (!bottomTab) return;
   bottomTab.textContent = label;
   bottomTab.classList.remove('hiding');
   bottomTab.classList.add('show');
 }
 function hideTab() {
+  if (!bottomTab) return;
   bottomTab.classList.remove('show');
   bottomTab.classList.add('hiding');
   setTimeout(() => {
@@ -2547,29 +2560,22 @@ if (_btnSave) {
 }
 
 // ── Tap To Continue Handler ──
-bottomTab.addEventListener('click', async () => {
-  if (bottomTab.textContent !== 'Tap To Continue') return;
-  hideTab();
+if (bottomTab) {
+  bottomTab.addEventListener('click', async () => {
+    if (bottomTab.textContent !== 'Tap To Continue') return;
+    hideTab();
+    prepareMenu();
+    await slideShow(() => { showMenu(); }, 10000);
+    await slideOut();
+    setNormalEffect(2.5);
+  });
 
-  // Slide masuk dari kiri
-  // slideShow 10 detik dengan audio effect
-  // Di detik-7: setNormalEffect (hilangkan cave effect, musik lobby normal)
-  prepareMenu(); // render lobby di belakang slide
-
-  await slideShow(() => {
-    showMenu(); // swap screen ke lobby di detik-7
-  }, 10000);
-
-  await slideOut();
-  // Cave effect hilang setelah mask tutup (terasa natural)
-  setNormalEffect(2.5);
-});
-
-// ── Create Account Handler ──
-bottomTab.addEventListener('click', () => {
-  if (bottomTab.textContent !== 'Create Account') return;
-  openModal();
-});
+  // ── Create Account Handler ──
+  bottomTab.addEventListener('click', () => {
+    if (bottomTab.textContent !== 'Create Account') return;
+    openModal();
+  });
+}
 
 // ── Lobby Music ──
 // ── Web Audio API Setup ──
@@ -2706,74 +2712,7 @@ function showMenu() {
   setNormalEffect(2.5);
 }
 
-// ── Dismiss tap-start ──
-function dismissTapStart() {
-  const tapEl = document.getElementById('tap-start');
-  if (tapEl) tapEl.style.display = 'none';
-}
-
-// ── Main Sequence ──
-async function mainSequence() {
-  // Layar hitam 2 detik
-  showScreen('screen-black');
-  await wait(2000);
-
-  // Loading screen
-  showScreen('screen-load');
-
-  // Musik
-  buildAudioGraph();
-  lobbyMusic.currentTime = 0;
-  lobbyMusic.play().then(() => {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    setLoadingEffect();
-  }).catch(() => {});
-
-  // Loading sequence ~50 detik
-  await newLoadingSequence();
-
-  // Ke main menu
-  const account = getAccount();
-  const displayName = account ? account.firstname + (account.lastname ? ' ' + account.lastname : '') : '';
-
-  prepareMenu();
-  await slideShow(() => { showMenu(); }, 10000);
-  await slideOut();
-  setNormalEffect(2.5);
-
-  if (account) {
-    showNotif(account.avatar || 'assets/user.png', displayName);
-    showTab('Tap To Continue');
-  } else {
-    showTab('Create Account');
-  }
-}
-
-// ── Tap Handler ──
-const tapStartEl = document.getElementById('tap-start');
-let tapFired = false;
-
-function handleTap(e) {
-  if (tapFired) return;
-  tapFired = true;
-  e.preventDefault();
-  tapStartEl.removeEventListener('touchstart', handleTap);
-  tapStartEl.removeEventListener('click', handleTap);
-
-  // Sembunyikan tap-start DULU
-  dismissTapStart();
-
-  // Fullscreen async — tidak tunggu, jalan bersamaan
-  goFullscreenLandscape();
-
-  // Langsung jalankan sequence
-  mainSequence();
-}
-
-tapStartEl.addEventListener('touchstart', handleTap, { passive: false });
-tapStartEl.addEventListener('click', handleTap);
-
-// runSequence tetap ada tapi tidak dipanggil (kompatibilitas)
+// tap handler moved to bottom
 
 
 // ── setStatus helper untuk loading screen baru ──
