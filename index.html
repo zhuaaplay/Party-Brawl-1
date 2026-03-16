@@ -28,9 +28,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Party Brawl">
-    <!-- Fullscreen landscape untuk Samsung/Android -->
-    <meta name="screen-orientation" content="landscape">
-    <meta name="full-screen" content="yes">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icon/icon-180x180.png">
 
     <meta name="msapplication-config" content="none">
@@ -44,6 +41,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
+<style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* ── FULLSCREEN REDMI 10 - PUNCH HOLE COVER ── */
@@ -65,23 +63,12 @@ html {
 }
 
 body {
-  width: 100vw; height: 100vh;
-  max-width: 100vw; max-height: 100vh;
+  width: 100%; height: 100%;
   background: #000;
   overflow: hidden;
   font-family: sans-serif;
   padding: 0;
   margin: 0;
-  position: fixed;
-  inset: 0;
-  -webkit-overflow-scrolling: touch;
-  -webkit-appearance: none;
-}
-@supports (width: 100dvw) {
-  body {
-    width: 100dvw; height: 100dvh;
-    max-width: 100dvw; max-height: 100dvh;
-  }
 }
 
 /* Semua fixed element extend 2px ke atas agar nutupin garis */
@@ -1661,40 +1648,20 @@ body {
   -webkit-image-rendering: -webkit-optimize-contrast;
 }
 
-/* ══ VIRTUAL POINTER ══ */
+/* ══ CUSTOM POINTER ══
+   Sembunyikan cursor asli, ganti dengan pointer.png */
 * { cursor: none !important; }
-
 #custom-pointer {
   position: fixed;
   top: 0; left: 0;
-  width: 40px; height: 40px;
+  width: 20px; height: 20px;
   background: url('assets/pointer.png') no-repeat top left / contain;
-  z-index: 999999;
+  z-index: 99999;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-  will-change: transform;
   transform: translate(0px, 0px);
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-  transition: transform 0.05s linear;
 }
-#custom-pointer.clicking {
-  transform: scale(0.85) translate(var(--px), var(--py)) !important;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)) brightness(1.2);
-}
-
-/* Zone touch untuk virtual mouse — menutupi seluruh layar saat menu aktif */
-#vptr-zone {
-  position: fixed;
-  inset: 0;
-  z-index: 99990;
-  display: none;
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-  background: transparent;
-}
-#vptr-zone.active { display: block; }
 
 </style>
 
@@ -1917,10 +1884,6 @@ body {
     <img id="menu-slide-img" src="assets/splashloading2.png" alt="">
   </div>
 </div>
-<!-- ══ VIRTUAL POINTER (hanya di main menu) ══ -->
-<div id="custom-pointer" style="display:none;"></div>
-<!-- Joystick zone: area hold+drag untuk gerakkan pointer -->
-<div id="vptr-zone"></div>
 
 <!-- ══ CHARACTER SELECTION SCREEN ══ -->
 <div id="screen-char">
@@ -2338,7 +2301,7 @@ async function goFullscreenLandscape() {
     if (el.requestFullscreen) {
       await el.requestFullscreen({ navigationUI: 'hide' });
     } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen({ navigationUI: 'hide' });
+      el.webkitRequestFullscreen();
     } else if (el.mozRequestFullScreen) {
       el.mozRequestFullScreen();
     }
@@ -2354,22 +2317,23 @@ async function goFullscreenLandscape() {
   } catch(e) {}
 }
 
-// Jaga fullscreen tetap aktif saat resize (seperti referensi)
-window.addEventListener('resize', () => { goFullscreenLandscape(); });
-
-// Re-trigger fullscreen otomatis jika user keluar (tanpa perlu gesture)
-function _onFsChange() {
-  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  if (!isFs) {
-    // Coba langsung dulu (works jika masih dalam trusted event context)
-    goFullscreenLandscape();
-    // Fallback: tunggu interaksi berikutnya
-    document.addEventListener("touchstart", goFullscreenLandscape, { once: true, passive: true });
-    document.addEventListener("click", goFullscreenLandscape, { once: true });
+// Re-trigger fullscreen jika keluar
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    setTimeout(() => {
+      document.addEventListener("touchstart", goFullscreenLandscape, { once: true, passive: true });
+      document.addEventListener("click", goFullscreenLandscape, { once: true });
+    }, 500);
   }
-}
-document.addEventListener("fullscreenchange", _onFsChange);
-document.addEventListener("webkitfullscreenchange", _onFsChange);
+});
+document.addEventListener("webkitfullscreenchange", () => {
+  if (!document.webkitFullscreenElement) {
+    setTimeout(() => {
+      document.addEventListener("touchstart", goFullscreenLandscape, { once: true, passive: true });
+      document.addEventListener("click", goFullscreenLandscape, { once: true });
+    }, 500);
+  }
+});
 
 // ── Helpers ──
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -3448,132 +3412,96 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 })();
 
 
-  // ══ VIRTUAL MOUSE POINTER ══
+  // ══ CUSTOM POINTER: ikuti mouse & touch ══
   (function() {
-    const ptr    = document.getElementById('custom-pointer');
-    const zone   = document.getElementById('vptr-zone');
-    const menu   = document.getElementById('screen-menu');
-    if (!ptr || !zone) return;
-
-    // Posisi pointer saat ini (px dari kiri-atas layar)
-    let px = window.innerWidth  / 2;
-    let py = window.innerHeight / 2;
-    // Kecepatan gerak (pixels per pixel drag)
-    const SPEED = 1.6;
-
-    function setPos(x, y) {
-      px = Math.max(0, Math.min(window.innerWidth  - 40, x));
-      py = Math.max(0, Math.min(window.innerHeight - 40, y));
-      ptr.style.transform = 'translate(' + px + 'px, ' + py + 'px)';
-      ptr.style.setProperty('--px', px + 'px');
-      ptr.style.setProperty('--py', py + 'px');
-    }
-
-    // Aktifkan/nonaktifkan pointer saat menu muncul/hilang
-    const menuObs = new MutationObserver(() => {
-      const isMenuActive = menu.classList.contains('active');
-      ptr.style.display  = isMenuActive ? 'block' : 'none';
-      zone.classList.toggle('active', isMenuActive);
-      if (isMenuActive) {
-        // Reset ke tengah layar saat menu muncul
-        setPos(window.innerWidth / 2, window.innerHeight / 2);
-      }
-    });
-    menuObs.observe(menu, { attributes: true, attributeFilter: ['class'] });
-
-    // ── MOUSE (desktop) ──
+    const ptr = document.getElementById('custom-pointer');
+    if (!ptr) return;
     document.addEventListener('mousemove', function(e) {
-      setPos(e.clientX, e.clientY);
+      ptr.style.transform = 'translate(' + e.clientX + 'px, ' + e.clientY + 'px)';
     }, { passive: true });
-
-    document.addEventListener('click', function(e) {
-      // Lewatkan klik dari zone ke elemen di bawah pointer
-      _doClick();
-    });
-
-    // ── TOUCH: hold + drag = gerak pointer | tap = klik ──
-    let touchStartX = 0, touchStartY = 0;
-    let touchStartPX = 0, touchStartPY = 0;
-    let touchId = null;
-    let hasMoved = false;
-    let holdTimer = null;
-    const MOVE_THRESHOLD = 6; // px sebelum dianggap drag
-    const TAP_MAX_MS = 250;
-    let touchDownTime = 0;
-
-    zone.addEventListener('touchstart', function(e) {
-      e.preventDefault();
-      const t = e.changedTouches[0];
-      touchId      = t.identifier;
-      touchStartX  = t.clientX;
-      touchStartY  = t.clientY;
-      touchStartPX = px;
-      touchStartPY = py;
-      hasMoved     = false;
-      touchDownTime = Date.now();
-    }, { passive: false });
-
-    zone.addEventListener('touchmove', function(e) {
-      e.preventDefault();
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const t = e.changedTouches[i];
-        if (t.identifier !== touchId) continue;
-        const dx = t.clientX - touchStartX;
-        const dy = t.clientY - touchStartY;
-        if (!hasMoved && (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD)) {
-          hasMoved = true;
-        }
-        if (hasMoved) {
-          setPos(touchStartPX + dx * SPEED, touchStartPY + dy * SPEED);
-        }
-      }
-    }, { passive: false });
-
-    zone.addEventListener('touchend', function(e) {
-      e.preventDefault();
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier !== touchId) continue;
-        const elapsed = Date.now() - touchDownTime;
-        if (!hasMoved && elapsed < TAP_MAX_MS) {
-          // TAP → simulasi klik
-          _doClick();
-        }
-        touchId = null;
-      }
-    }, { passive: false });
-
-    // Simulasi klik pada elemen di posisi pointer
-    function _doClick() {
-      if (!menu.classList.contains('active')) return;
-      // Animasi klik
-      ptr.classList.add('clicking');
-      setTimeout(() => ptr.classList.remove('clicking'), 120);
-
-      // Sembunyikan zone sementara agar hitTest tembus ke elemen asli
-      zone.style.display = 'none';
-      const el = document.elementFromPoint(px + 4, py + 4);
-      zone.style.display = '';
-
-      if (el && el !== zone) {
-        // Dispatch mousedown + mouseup + click
-        ['mousedown','mouseup','click'].forEach(type => {
-          el.dispatchEvent(new MouseEvent(type, {
-            bubbles: true, cancelable: true,
-            clientX: px + 4, clientY: py + 4,
-            view: window
-          }));
-        });
-      }
-    }
+    document.addEventListener('touchmove', function(e) {
+      const t = e.touches[0];
+      ptr.style.transform = 'translate(' + t.clientX + 'px, ' + t.clientY + 'px)';
+    }, { passive: true });
+    document.addEventListener('touchstart', function(e) {
+      const t = e.touches[0];
+      ptr.style.transform = 'translate(' + t.clientX + 'px, ' + t.clientY + 'px)';
+    }, { passive: true });
+    document.addEventListener('mouseleave', function() { ptr.style.opacity = '0'; });
+    document.addEventListener('mouseenter', function() { ptr.style.opacity = '1'; });
   })();
 
 </script>
 
-<script>
+
 // ── Loading Screen JS ──
 const wait2 = ms => new Promise(r => setTimeout(r, ms));
 
-async function setStatus2(label, ms) {
+function getAccount() { try { return JSON.parse(localStorage.getItem('pb_account')) || null; } catch { return null; } }
+function saveAccount(d) { localStorage.setItem('pb_account', JSON.stringify(d)); }
+
+function cropSquare(src, cb) {
+    const img = new Image();
+    img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        c.getContext('2d').drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+        cb(c.toDataURL('image/jpeg', 0.88));
+    };
+    img.src = src;
+}
+
+let avatarDataUrl = null;
+(function() {
+    const btn = document.getElementById('avatar-btn');
+    const inp = document.getElementById('avatar-input');
+    const prv = document.getElementById('avatar-preview');
+    if (!btn) return;
+    btn.addEventListener('click', () => inp.click());
+    inp.addEventListener('change', function() {
+        const file = this.files[0]; if (!file) return;
+        const r = new FileReader();
+        r.onload = e => cropSquare(e.target.result, cr => { avatarDataUrl = cr; prv.src = cr; });
+        r.readAsDataURL(file);
+    });
+})();
+
+function openAccountModal() {
+    const dim = document.getElementById('account-modal-dim');
+    const mod = document.getElementById('account-modal');
+    dim.classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(() => mod.classList.add('open')));
+}
+function closeAccountModal() {
+    return new Promise(resolve => {
+        const dim = document.getElementById('account-modal-dim');
+        const mod = document.getElementById('account-modal');
+        mod.classList.remove('open'); mod.classList.add('closing');
+        setTimeout(() => { mod.classList.remove('closing'); dim.classList.remove('show'); resolve(); }, 300);
+    });
+}
+function waitForAccount() {
+    return new Promise(resolve => {
+        if (getAccount()) { resolve(); return; }
+        openAccountModal();
+        document.getElementById('btn-create').onclick = () => {
+            const fn = document.getElementById('input-firstname').value.trim();
+            const ln = document.getElementById('input-lastname').value.trim();
+            const err = document.getElementById('modal-field-error');
+            document.getElementById('input-firstname').classList.remove('error');
+            document.getElementById('input-lastname').classList.remove('error');
+            err.classList.remove('show');
+            if (fn.length < 3) { document.getElementById('input-firstname').classList.add('error'); err.textContent = 'First name minimum 3 characters.'; err.classList.add('show'); return; }
+            if (ln.length > 5) { document.getElementById('input-lastname').classList.add('error'); err.textContent = 'Last name maximum 5 characters.'; err.classList.add('show'); return; }
+            saveAccount({ firstname: fn, lastname: ln, avatar: avatarDataUrl || 'assets/user.png' });
+            closeAccountModal().then(resolve);
+        };
+    });
+}
+
+const statusLabel = document.getElementById('wm-status-label');
+async function setStatus(label, ms) {
     if (statusLabel) { statusLabel.style.opacity = '0'; }
     await wait2(150);
     if (statusLabel) { statusLabel.textContent = label; statusLabel.style.opacity = '1'; }
@@ -3581,15 +3509,15 @@ async function setStatus2(label, ms) {
 }
 
 async function loadingSequence() {
-    await setStatus2('Connect to server', 7000);
-    await setStatus2('Loading resource',  7000);
+    await setStatus('Connect to server', 7000);
+    await setStatus('Loading resource',  7000);
     if (statusLabel) { statusLabel.textContent = 'Login'; statusLabel.style.opacity = '1'; }
     await waitForAccount();
     await wait2(6000);
-    await setStatus2('Update resource', 8000);
-    await setStatus2('Load resource',   8000);
-    await setStatus2('Load assets',     8000);
-    await setStatus2('Completed',       2000);
+    await setStatus('Update resource', 8000);
+    await setStatus('Load resource',   8000);
+    await setStatus('Load assets',     8000);
+    await setStatus('Completed',       2000);
 }
 
 async function mainSequence() {
@@ -3602,17 +3530,30 @@ async function mainSequence() {
     if (menuEl) { menuEl.classList.add('active'); menuEl.style.opacity = '1'; menuEl.style.pointerEvents = 'all'; }
 }
 
-// Auto-start tanpa perlu ketuk layar
-(async () => {
-    const tapEl = document.getElementById('tap-start');
-    if (tapEl) tapEl.style.display = 'none';
+const tapEl = document.getElementById('tap-start');
+let tapFired = false;
+function handleTap(e) {
+    if (tapFired) return;
+    tapFired = true;
+    e.preventDefault();
+    tapEl.removeEventListener('touchstart', handleTap);
+    tapEl.removeEventListener('click', handleTap);
+    // Sembunyikan tap-start
+    tapEl.style.display = 'none';
+    // Langsung tampilkan loading screen — tidak ada blackscreen
     document.getElementById('screen-load').classList.add('active');
+    // Fullscreen dari gesture
     if (typeof goFullscreenLandscape === 'function') goFullscreenLandscape();
-    await loadingSequence();
-    document.getElementById('screen-load').classList.remove('active');
-    const menuEl = document.getElementById('screen-menu');
-    if (menuEl) { menuEl.classList.add('active'); menuEl.style.opacity = '1'; menuEl.style.pointerEvents = 'all'; }
-})();
+    // Jalankan loading (screen-load sudah ditampilkan di atas)
+    (async () => {
+        await loadingSequence();
+        document.getElementById('screen-load').classList.remove('active');
+        const menuEl = document.getElementById('screen-menu');
+        if (menuEl) { menuEl.classList.add('active'); menuEl.style.opacity = '1'; menuEl.style.pointerEvents = 'all'; }
+    })();
+}
+tapEl.addEventListener('touchstart', handleTap, { passive: false });
+tapEl.addEventListener('click', handleTap);
 </script>
 </body>
 </html>
