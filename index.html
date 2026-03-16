@@ -3384,97 +3384,32 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   })();
 
 // ── Loading Screen JS ──
+// (getAccount, saveAccount, openAccountModal, closeAccountModal, waitForAccount sudah ada di atas)
+
 const wait2 = ms => new Promise(r => setTimeout(r, ms));
 
-function getAccount() { try { return JSON.parse(localStorage.getItem('pb_account')) || null; } catch { return null; } }
-function saveAccount(d) { localStorage.setItem('pb_account', JSON.stringify(d)); }
-
-function cropSquare(src, cb) {
-    const img = new Image();
-    img.onload = () => {
-        const size = Math.min(img.width, img.height);
-        const c = document.createElement('canvas');
-        c.width = c.height = size;
-        c.getContext('2d').drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
-        cb(c.toDataURL('image/jpeg', 0.88));
-    };
-    img.src = src;
-}
-
-(function() {
-    const btn = document.getElementById('avatar-btn');
-    const inp = document.getElementById('avatar-input');
-    const prv = document.getElementById('avatar-preview');
-    if (!btn) return;
-    btn.addEventListener('click', () => inp.click());
-    inp.addEventListener('change', function() {
-        const file = this.files[0]; if (!file) return;
-        const r = new FileReader();
-        r.onload = e => cropSquare(e.target.result, cr => { avatarDataUrl = cr; prv.src = cr; });
-        r.readAsDataURL(file);
-    });
-})();
-
-function openAccountModal() {
-    const dim = document.getElementById('account-modal-dim');
-    const mod = document.getElementById('account-modal');
-    dim.classList.add('show');
-    requestAnimationFrame(() => requestAnimationFrame(() => mod.classList.add('open')));
-}
-function closeAccountModal() {
-    return new Promise(resolve => {
-        const dim = document.getElementById('account-modal-dim');
-        const mod = document.getElementById('account-modal');
-        mod.classList.remove('open'); mod.classList.add('closing');
-        setTimeout(() => { mod.classList.remove('closing'); dim.classList.remove('show'); resolve(); }, 300);
-    });
-}
-function waitForAccount() {
-    return new Promise(resolve => {
-        if (getAccount()) { resolve(); return; }
-        openAccountModal();
-        document.getElementById('btn-create').onclick = () => {
-            const fn = document.getElementById('input-firstname').value.trim();
-            const ln = document.getElementById('input-lastname').value.trim();
-            const err = document.getElementById('modal-field-error');
-            document.getElementById('input-firstname').classList.remove('error');
-            document.getElementById('input-lastname').classList.remove('error');
-            err.classList.remove('show');
-            if (fn.length < 3) { document.getElementById('input-firstname').classList.add('error'); err.textContent = 'First name minimum 3 characters.'; err.classList.add('show'); return; }
-            if (ln.length > 5) { document.getElementById('input-lastname').classList.add('error'); err.textContent = 'Last name maximum 5 characters.'; err.classList.add('show'); return; }
-            saveAccount({ firstname: fn, lastname: ln, avatar: avatarDataUrl || 'assets/user.png' });
-            closeAccountModal().then(resolve);
-        };
-    });
-}
-
-async function setStatus(label, ms) {
-    if (statusLabel) { statusLabel.style.opacity = '0'; }
-    await wait2(150);
-    if (statusLabel) { statusLabel.textContent = label; statusLabel.style.opacity = '1'; }
-    if (ms > 0) await wait2(ms);
+// Fullscreen dari gesture — pastikan dipanggil saat tap
+async function doFullscreen() {
+  try {
+    const el = document.documentElement;
+    if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } catch(e) {}
+  try {
+    if (screen.orientation?.lock) await screen.orientation.lock('landscape');
+  } catch(e) {}
 }
 
 async function loadingSequence() {
-    await setStatus('Connect to server', 7000);
-    await setStatus('Loading resource',  7000);
+    await setStatus('Connect to server', '', 7000);
+    await setStatus('Loading resource',  '', 7000);
     if (statusLabel) { statusLabel.textContent = 'Login'; statusLabel.style.opacity = '1'; }
     await waitForAccount();
     await wait2(6000);
-    await setStatus('Update resource', 8000);
-    await setStatus('Load resource',   8000);
-    await setStatus('Load assets',     8000);
-    await setStatus('Completed',       2000);
-}
-
-async function mainSequence() {
-    // Langsung ke loading screen tanpa blackscreen
-    document.getElementById('screen-load').classList.add('active');
-    await loadingSequence();
-    document.getElementById('screen-load').classList.remove('active');
-    // Tampilkan main menu setelah loading selesai
-    const menuEl = document.getElementById('screen-menu');
-    if (menuEl) { menuEl.classList.add('active'); menuEl.style.opacity = '1'; menuEl.style.pointerEvents = 'all'; }
+    await setStatus('Update resource', '', 8000);
+    await setStatus('Load resource',   '', 8000);
+    await setStatus('Load assets',     '', 8000);
+    await setStatus('Completed',       '', 2000);
 }
 
 const tapEl = document.getElementById('tap-start');
@@ -3485,13 +3420,11 @@ function handleTap(e) {
     e.preventDefault();
     tapEl.removeEventListener('touchstart', handleTap);
     tapEl.removeEventListener('click', handleTap);
-    // Sembunyikan tap-start
     tapEl.style.display = 'none';
-    // Langsung tampilkan loading screen — tidak ada blackscreen
-    document.getElementById('screen-load').classList.add('active');
     // Fullscreen dari gesture
-    if (typeof goFullscreenLandscape === 'function') goFullscreenLandscape();
-    // Jalankan loading (screen-load sudah ditampilkan di atas)
+    doFullscreen();
+    // Langsung loading
+    document.getElementById('screen-load').classList.add('active');
     (async () => {
         await loadingSequence();
         document.getElementById('screen-load').classList.remove('active');
