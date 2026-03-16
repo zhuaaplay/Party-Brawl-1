@@ -41,7 +41,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-<style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* ── FULLSCREEN REDMI 10 - PUNCH HOLE COVER ── */
@@ -57,9 +56,9 @@ html {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  /* Fix garis putih di semua Android — outline negatif nutupin 1px separator */
-  outline: 3px solid #000;
-  outline-offset: -1px;
+  /* Tutupi garis putih 1px di semua Android */
+  margin: -1px 0 0 0;
+  padding: 1px 0 0 0;
 }
 
 body {
@@ -71,29 +70,9 @@ body {
   margin: 0;
 }
 
-/* Semua fixed element extend 2px ke atas agar nutupin garis */
-#tap-start, #screen-load, .screen,
-#slide-transition, #rotate-overlay,
-#account-modal-dim {
-  top: -2px !important;
-}
-
 /* Cover seluruh layar termasuk area punch-hole dan edge */
 .screen, #slide-transition, #modal-dim, #rotate-overlay {
   top: 0; left: 0; right: 0; bottom: 0;
-}
-
-/* ── TAP TO START OVERLAY ── */
-#tap-start {
-  position: fixed; inset: 0;
-  background: #000;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer;
-  user-select: none;
 }
 
 /* ── SCREENS ── */
@@ -110,31 +89,6 @@ body {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; object-position: center;
-}
-
-/* ── LOADING SCREEN (WATERMARK STYLE) ── */
-#screen-load {
-  background: #e8e8e8 !important;
-}
-
-#img-loadbg { display: none !important; }
-
-#watermark-img {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  z-index: 0;
-}
-
-.wm-corner {
-  position: absolute;
-  color: #444;
-  line-height: 1.45;
-  z-index: 1;
-  font-family: Arial, sans-serif;
 }
 
 #wm-top-left {
@@ -1662,8 +1616,6 @@ body {
   -webkit-user-select: none;
   transform: translate(0px, 0px);
 }
-
-</style>
 
     /* ── Loading Screen ── */
     #screen-load {
@@ -3452,7 +3404,6 @@ function cropSquare(src, cb) {
     img.src = src;
 }
 
-let avatarDataUrl = null;
 (function() {
     const btn = document.getElementById('avatar-btn');
     const inp = document.getElementById('avatar-input');
@@ -3500,7 +3451,6 @@ function waitForAccount() {
     });
 }
 
-const statusLabel = document.getElementById('wm-status-label');
 async function setStatus(label, ms) {
     if (statusLabel) { statusLabel.style.opacity = '0'; }
     await wait2(150);
